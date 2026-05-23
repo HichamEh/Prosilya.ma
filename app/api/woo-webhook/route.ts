@@ -3,38 +3,34 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   try {
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    
+    if (!serviceKey) {
+      return NextResponse.json({ error: 'Missing service key' }, { status: 500 })
+    }
+
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      'https://tyfhkzupeoabanmzgbug.supabase.co',
+      serviceKey
     )
 
     const order = await req.json()
 
-    const name = (order.billing?.first_name || '') + ' ' + (order.billing?.last_name || '')
-    const phone = order.billing?.phone || ''
-    const city = order.billing?.city || ''
-    const address = order.billing?.address_1 || ''
-    const total = parseFloat(order.total) || 0
-    const wooId = order.id || ''
-
     const { error } = await supabase.from('orders').insert({
       organization_id: process.env.DEFAULT_ORGANIZATION_ID,
-      customer_name: name.trim(),
-      customer_phone: phone,
-      customer_city: city,
-      customer_address: address,
-      total_cod: total,
+      customer_name: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim(),
+      customer_phone: order.billing?.phone || '',
+      customer_city: order.billing?.city || '',
+      customer_address: order.billing?.address_1 || '',
+      total_cod: parseFloat(order.total) || 0,
       delivery_company: null,
-      notes: 'WooCommerce #' + wooId,
+      notes: 'WooCommerce #' + order.id,
       status: 'new',
     })
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ success: true })
   } catch (err) {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
