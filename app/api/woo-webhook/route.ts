@@ -3,20 +3,14 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   try {
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-    
-    if (!serviceKey) {
-      return NextResponse.json({ error: 'Missing service key' }, { status: 500 })
-    }
-
     const supabase = createClient(
       'https://tyfhkzupeoabanmzgbug.supabase.co',
-      serviceKey
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
     const order = await req.json()
 
-    const { error } = await supabase.from('orders').insert({
+    const { data, error } = await supabase.from('orders').insert({
       organization_id: process.env.DEFAULT_ORGANIZATION_ID,
       customer_name: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim(),
       customer_phone: order.billing?.phone || '',
@@ -29,7 +23,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, data })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
