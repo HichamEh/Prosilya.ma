@@ -10,20 +10,18 @@ export async function POST(req: NextRequest) {
 
     const order = await req.json()
 
-    const { data, error } = await supabase.from('orders').insert({
-      organization_id: process.env.DEFAULT_ORGANIZATION_ID,
-      customer_name: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim(),
-      customer_phone: order.billing?.phone || '',
-      customer_city: order.billing?.city || '',
-      customer_address: order.billing?.address_1 || '',
-      total_cod: parseFloat(order.total) || 0,
-      delivery_company: null,
-      notes: 'WooCommerce #' + order.id,
-      status: 'new',
+    const { error } = await supabase.rpc('insert_woo_order', {
+      p_organization_id: process.env.DEFAULT_ORGANIZATION_ID,
+      p_customer_name: `${order.billing?.first_name || ''} ${order.billing?.last_name || ''}`.trim(),
+      p_customer_phone: order.billing?.phone || '',
+      p_customer_city: order.billing?.city || '',
+      p_customer_address: order.billing?.address_1 || '',
+      p_total_cod: parseFloat(order.total) || 0,
+      p_notes: 'WooCommerce #' + order.id,
     })
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    return NextResponse.json({ success: true, data })
+    return NextResponse.json({ success: true })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
